@@ -208,6 +208,7 @@ BH_ROOT_DIR  = $(TOPDIR)/tools/marvell/bin_hdr
 INCLUDE      = -I$(BH_ROOT_DIR)/src_ddr -I$(BH_ROOT_DIR)/src_phy/$(BOARD) -I$(BH_ROOT_DIR)/inc/common \
 	       -I$(BH_ROOT_DIR)/inc/ddr3_soc/$(INCNAME)  -I$(BH_ROOT_DIR)/inc/ddr3_soc/$(BOARD) -I$(BH_ROOT_DIR)/platform/sysEnv/$(BOARD) -I$(TOPDIR)/include -I$(BH_ROOT_DIR)/src_init/$(BOARD)
 HOSTCFLAGS   = -Wall $(INCLUDE)
+INCLUDE     += -I$(TOPDIR)/westermo
 
 ifeq ($(BIN_HDR_DEBUG),1)
 DEBUG_FLAGS += -g -O0

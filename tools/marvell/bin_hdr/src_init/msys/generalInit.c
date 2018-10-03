@@ -171,7 +171,7 @@ MV_STATUS mvGeneralInit(void)
 	mvMbusWinConfig();
 #if !defined(MV_NO_PRINT)
 	mvUartInit();
-	DEBUG_INIT_S("\n\nGeneral initialization - Version: " GENERAL_VERION "\n");
+	DEBUG_INIT_S("\nGeneral initialization - Version: " GENERAL_VERION "\n");
 #endif
 	mvHwsTwsiInitWrapper();
 

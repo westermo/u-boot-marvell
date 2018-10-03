@@ -140,3 +140,103 @@ int mvBinHdrDispatcher(void)
 #endif
 	return 0;
 }
+
+#define BIT(nr)							(1UL << (nr))
+
+#define DAGGER_MDIO_PPU_DISABLE 		BIT(7)
+#define DAGGER_XC3_LEGACY_ADDR_COMPL 	BIT(16)
+
+#define DAGGER_XC3_BASE					0xb8000000
+#define DAGGER_XC3_WIN1_OFFSET 			0x80000
+#define DAGGER_MDIO_PPU_REG_OFFSET 		0x4034
+#define DAGGER_MDIO_PPU_REG 			(DAGGER_XC3_BASE | DAGGER_XC3_WIN1_OFFSET | DAGGER_MDIO_PPU_REG_OFFSET)
+#define DAGGER_XC3_LEGACY_ADDR_REG 		(DAGGER_XC3_BASE | 0x140)
+#define DAGGER_XC3_WIN1_REG  			(DAGGER_XC3_BASE | 0x124)
+
+#define DAGGER_INTERNAL_REG_BASE 		0xd0000000
+#define DAGGER_WIN15_CTRL_REG 			(DAGGER_INTERNAL_REG_BASE | 0x200c8)
+#define DAGGER_WIN15_BARL_REG 			(DAGGER_INTERNAL_REG_BASE | 0x200cc)
+
+#define DAGGER_GPIO_DATA_OUT_REG		(DAGGER_INTERNAL_REG_BASE | 0x18100)
+#define DAGGER_GPIO_OUT_ENABLE_REG		(DAGGER_INTERNAL_REG_BASE | 0x18104)
+
+static MV_STATUS gpioOutSet (int bit, int value)
+{
+	MV_U32 regVal;
+
+	regVal = MV_MEMIO_LE32_READ(DAGGER_GPIO_OUT_ENABLE_REG);
+	regVal &= ~(1 << bit);
+	MV_MEMIO_LE32_WRITE(DAGGER_GPIO_OUT_ENABLE_REG, regVal);
+
+	regVal = MV_MEMIO_LE32_READ(DAGGER_GPIO_DATA_OUT_REG);
+	if (value)
+		regVal |= (1 << bit);
+	else
+		regVal &= ~(1 << bit);
+	MV_MEMIO_LE32_WRITE(DAGGER_GPIO_DATA_OUT_REG, regVal);
+
+	return MV_OK;
+}
+
+static MV_STATUS mdioPpuSet (int enable)
+{
+	MV_U32 regVal;
+
+	/* Map packet processor at 0xb8000000 (1M) */
+	MV_MEMIO_LE32_WRITE(DAGGER_WIN15_CTRL_REG, 0x000f0031);
+	MV_MEMIO_LE32_WRITE(DAGGER_WIN15_BARL_REG, DAGGER_XC3_BASE);
+
+	/* Disable legacy addressing mode */
+	regVal = MV_MEMIO_LE32_READ(DAGGER_XC3_LEGACY_ADDR_REG);
+	if (regVal & DAGGER_XC3_LEGACY_ADDR_COMPL)
+		MV_MEMIO_LE32_WRITE(DAGGER_XC3_LEGACY_ADDR_REG, regVal & ~DAGGER_XC3_LEGACY_ADDR_COMPL);
+
+	/* Map MDIO0 in window 1 @ offset 0x07000000 */
+	MV_MEMIO_LE32_WRITE(DAGGER_XC3_WIN1_REG, 0x000000e0);
+
+	/* Set PPU @ MDIO0 @ offset 0x07004034 */
+	regVal = MV_MEMIO_LE32_READ(DAGGER_MDIO_PPU_REG);
+	if (enable)
+		MV_MEMIO_LE32_WRITE(DAGGER_MDIO_PPU_REG, regVal & ~DAGGER_MDIO_PPU_DISABLE);
+	else
+		MV_MEMIO_LE32_WRITE(DAGGER_MDIO_PPU_REG, regVal | DAGGER_MDIO_PPU_DISABLE);
+
+	/* Map MDIO1 in window 1 @ offset 0x09000000 */
+	MV_MEMIO_LE32_WRITE(DAGGER_XC3_WIN1_REG, 0x00000120);
+
+	/* Set PPU @ MDIO0 @ offset 0x09004034 */
+	regVal = MV_MEMIO_LE32_READ(DAGGER_MDIO_PPU_REG);
+	if (enable)
+		MV_MEMIO_LE32_WRITE(DAGGER_MDIO_PPU_REG, regVal & ~DAGGER_MDIO_PPU_DISABLE);
+	else
+		MV_MEMIO_LE32_WRITE(DAGGER_MDIO_PPU_REG, regVal | DAGGER_MDIO_PPU_DISABLE);
+
+//	if (enable)
+//		DEBUG_INIT_S("Enabled PPU\n");
+//	else
+//		DEBUG_INIT_S("Disabled PPU\n");
+//
+	return MV_OK;
+}
+
+#include <utsrelease.h>
+
+MV_STATUS earlyHwInit(void)
+{
+	//DEBUG_INIT_S("earlyHwInit\n");
+	mdioPpuSet(0);
+
+	/* Set GPIO 17 so that the reset FPGA knows PPU is disabled */
+	gpioOutSet(17, 1);
+
+	DEBUG_INIT_S("\n\nWestermo initialization - Version: " UTS_RELEASE "\n");
+
+	return MV_OK;
+}
+
+MV_STATUS postDramHwInit(void)
+{
+	//DEBUG_INIT_S("postDramHwInit2\n");
+
+	return mdioPpuSet(1);
+}

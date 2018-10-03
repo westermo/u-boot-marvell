@@ -76,6 +76,8 @@ MV_STATUS mvCtrlHighSpeedSerdesPhyConfig(void);
 MV_STATUS ddr3Init(void);
 MV_STATUS suspendWakeup(void);
 MV_STATUS mvGeneralInit(void);
+MV_STATUS earlyHwInit(void);
+MV_STATUS postDramHwInit(void);
 
 /* How to add new component to binary header:
 #ifdef CONFIG_EXAMPLE_COMPONENT
@@ -86,9 +88,11 @@ MV_STATUS componentExample(void);
 					{"Suspend wake up", suspendWakeup}, 			\
 					{NULL,NULL}
 #endif */
-#define BIN_HEADER_COMPONENT_TABLE  	{"General initialization", mvGeneralInit}, 	\
+#define BIN_HEADER_COMPONENT_TABLE  	{"Early HW initialization", earlyHwInit}, 	\
+					{"General initialization", mvGeneralInit}, 	\
 					{"SERDES initialization", mvCtrlHighSpeedSerdesPhyConfig}, 	\
 					{"DRAM initialization", ddr3Init},				\
+					{"Post DRAM HW initialization", postDramHwInit},				\
 					{"Suspend wake up", suspendWakeup}, 			\
 					{NULL,NULL}
 
