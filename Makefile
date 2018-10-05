@@ -1116,6 +1116,6 @@ backup:
 	gtar --force-local -zcvf `LC_ALL=C date "+$$F-%Y-%m-%d-%T.tar.gz"` $$F
 
 dagger:
-	make -C westermo $@
+	make -C westermo CROSS_COMPILE=arm-msys-linux-gnueabi- CROSS_COMPILE_BH=arm-msys-linux-gnueabi- $@
 	
 #########################################################################
