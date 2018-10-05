@@ -83,3 +83,9 @@ cscope.*
 
 # spl ais files
 /spl/*.ais
+
+examples/api/marvell/mon_ext/monext
+tools/marvell/bin_hdr/src_ddr/lib/ddr3_training_msys_ac3.lib
+westermo/2018.10.0
+westermo/binary.0
+westermo/utsrelease.h
