@@ -146,6 +146,7 @@ int mvBinHdrDispatcher(void)
 
 #define DAGGER_XC3_LEGACY_ADDR_COMPL 		BIT(16)
 #define DAGGER_XC3_ENABLE_MASTER_SMI_POLL 	BIT(21)
+#define DAGGER_XC3_INVERT_MDC			 	BIT(20)
 
 #define DAGGER_XC3_BASE						0xb8000000
 #define DAGGER_XC3_WIN1_OFFSET 				0x80000
@@ -198,6 +199,11 @@ static MV_STATUS mdioPpuSet (int enable)
 
 	/* Set PPU @ MDIO0 @ offset 0x07004034 */
 	regVal = MV_MEMIO_LE32_READ(DAGGER_MDIO_LMS0_REG);
+
+	/* Clock polarity is inverted by default, causing the sampled
+	 * data to be left-shifted-by-one. */
+	regVal &= ~DAGGER_XC3_INVERT_MDC;
+
 	if (enable)
 		MV_MEMIO_LE32_WRITE(DAGGER_MDIO_LMS0_REG, regVal | DAGGER_XC3_ENABLE_MASTER_SMI_POLL);
 	else
@@ -208,6 +214,11 @@ static MV_STATUS mdioPpuSet (int enable)
 
 	/* Set PPU @ MDIO0 @ offset 0x09004034 */
 	regVal = MV_MEMIO_LE32_READ(DAGGER_MDIO_LMS0_REG);
+
+	/* Clock polarity is inverted by default, causing the sampled
+	 * data to be left-shifted-by-one. */
+	regVal &= ~DAGGER_XC3_INVERT_MDC;
+
 	if (enable)
 		MV_MEMIO_LE32_WRITE(DAGGER_MDIO_LMS0_REG, regVal | DAGGER_XC3_ENABLE_MASTER_SMI_POLL);
 	else

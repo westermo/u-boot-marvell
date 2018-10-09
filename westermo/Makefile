@@ -2,7 +2,7 @@ CURR_DIR = $(shell pwd)
 
 BIN_TAG = $(shell git describe --abbrev=0 2> /dev/null)
 
-UTS_RELEASE = $(shell git describe --always 2> /dev/null)
+UTS_RELEASE = $(shell git describe --dirty --always 2> /dev/null)
 
 .PHONY: all clean dagger utsrelease
 
