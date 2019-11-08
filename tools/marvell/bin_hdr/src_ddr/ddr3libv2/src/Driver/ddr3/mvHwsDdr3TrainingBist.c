@@ -85,6 +85,7 @@ GT_STATUS    ddr3TipBistActivate
     txBurstSize = (direction == OPER_WRITE) ? patternTable[pattern].txBurstSize : 0;
     delayBetweenBurst = (direction == OPER_WRITE) ? 2 : 0;
     rdMode = (direction == OPER_WRITE) ? 1 : 0;
+    //AOmvPrintf("ddr3TipBistActivate : d=%d numTx=%d bs=%d cs=%d dur=%d\n", direction, patternTable[pattern].numOfPhasesTx, txBurstSize, csNum, duration);
     CHECK_STATUS(ddr3TipConfigureOdpg(devNum, accessType, ifNum, direction, patternTable[pattern].numOfPhasesTx,
                                       txBurstSize, patternTable[pattern].numOfPhasesRx, delayBetweenBurst,
                                       rdMode,  csNum, addrStressJump, duration));
@@ -220,7 +221,7 @@ GT_STATUS    mvHwsDdr3RunBist
 
      for(i = 0; i < MAX_INTERFACE_NUM; i++)
     {
-        VALIDATE_IF_ACTIVE(topologyMap->interfaceActiveMask, i)
+       VALIDATE_IF_ACTIVE(topologyMap->interfaceActiveMask, i)
 	mvHwsDdr3CsBaseAdrCalc(i,csNum,&winBase);
         retVal = ddr3TipBistActivate(devNum, pattern, ACCESS_TYPE_UNICAST, i, OPER_WRITE, STRESS_NONE, DURATION_SINGLE,  BIST_START, (bistOffset + winBase),csNum, 15 );
         if (retVal != GT_OK)
@@ -242,6 +243,7 @@ GT_STATUS    mvHwsDdr3RunBist
             return retVal;
         }
         result[i] = stBistResult.bistErrorCnt;
+        //mvPrintf("mvHwsDdr3RunBist i=%d res=0x%x pattern=0x%x\n", i, stBistResult.bistErrorCnt, pattern);
     }
 
 

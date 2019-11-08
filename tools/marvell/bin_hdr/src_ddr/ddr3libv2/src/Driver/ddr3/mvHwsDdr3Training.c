@@ -361,7 +361,6 @@ GT_STATUS ddr3TipTuneTrainingParams
 	devNum = devNum; /* avoid warnings */
 
 	if(params->ckDelay != MV_PARAMS_UNDEFINED)     ckDelay = params->ckDelay;
-
 	if(params->PhyReg3Val != MV_PARAMS_UNDEFINED)  PhyReg3Val = params->PhyReg3Val;
 
 	if(params->gRttNom != MV_PARAMS_UNDEFINED)     gRttNom = params->gRttNom;
@@ -778,7 +777,7 @@ GT_STATUS    mvHwsDdr3TipLoadTopologyMap
     MV_HWS_SPEED_BIN speedBinIndex;
     MV_HWS_DDR_FREQ freq = DDR_FREQ_LIMIT;
     GT_U32 interfaceId = 0;
-	GT_U8 octetsPerInterfaceNum = (GT_U8)ddr3TipDevAttrGet(devNum, MV_ATTR_OCTET_PER_INTERFACE);
+    GT_U8 octetsPerInterfaceNum = (GT_U8)ddr3TipDevAttrGet(devNum, MV_ATTR_OCTET_PER_INTERFACE);
 
     ddr3TipSetTopologyMap(devNum, topologyMapPtr);
     topologyMap = ddr3TipGetTopologyMap(devNum);
@@ -1001,7 +1000,6 @@ GT_STATUS    mvHwsDdr3TipRunAlg
         return odtTest(devNum, algoType);
     }
 #endif
-
     if(algoType == ALGO_TYPE_DYNAMIC)
     {
         retVal = ddr3TipDDR3AutoTune(devNum);
@@ -1012,7 +1010,6 @@ GT_STATUS    mvHwsDdr3TipRunAlg
 	{
    		MV_HWS_DDR_FREQ freq;
        	freq = initFreq;
-
         /* add to mask */
         if (isAdllCalibBeforeInit != 0)
         {
@@ -1026,6 +1023,7 @@ GT_STATUS    mvHwsDdr3TipRunAlg
     }
     if (retVal != GT_OK)
     {
+	    //mvPrintf("********   DRAM initialization Failed (res 0x%x)   ********\n", retVal);
         DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("********   DRAM initialization Failed (res 0x%x)   ********\n", retVal));
     }
 
@@ -2270,7 +2268,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
 
 #ifdef DDR_VIEWER_TOOL
 	if(debugTraining == DEBUG_LEVEL_TRACE)
-		CHECK_STATUS(printDeviceInfo((GT_U8)devNum));
+/*AO 1/11*/		CHECK_STATUS(printDeviceInfo((GT_U8)devNum));
 #endif
 
 	for(effective_cs = 0; effective_cs < max_cs; effective_cs++){
@@ -2292,13 +2290,15 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
     if (isAdllCalibBeforeInit != 0)
     {
 		DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("with adll calib before init\n"));
-        AdllCalibration(devNum, ACCESS_TYPE_MULTICAST, 0, freq );
+		//mvPrintf("with adll calib before init\n");
+		AdllCalibration(devNum, ACCESS_TYPE_MULTICAST, 0, freq );
     }
 
     if (isRegDump != 0)
     {
+		mvPrintf("Dump before init controller\n");
 		DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("Dump before init controller\n"));
-        ddr3TipRegDump(devNum);
+		ddr3TipRegDump(devNum);
     }
     
 	
@@ -2306,10 +2306,10 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
     {
         trainingStage = INIT_CONTROLLER;
         DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("INIT_CONTROLLER_MASK_BIT\n"));
-		initCntrPrm.doMrsPhy = GT_TRUE;
-		initCntrPrm.isCtrl64Bit = GT_FALSE;
-		initCntrPrm.initPhy = GT_TRUE;
-		initCntrPrm.msysInit = GT_FALSE;
+	initCntrPrm.doMrsPhy = GT_TRUE;
+	initCntrPrm.isCtrl64Bit = GT_FALSE;
+	initCntrPrm.initPhy = GT_TRUE;
+	initCntrPrm.msysInit = GT_FALSE;
         retVal = mvHwsDdr3TipInitController(devNum, &initCntrPrm);
         if (isRegDump != 0)
         {
@@ -2318,6 +2318,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
         if (retVal != GT_OK)
         {
             DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("mvHwsDdr3TipInitController failure \n")); 
+            mvPrintf("mvHwsDdr3TipInitController failure \n"); 
             if (debugMode == GT_FALSE)
             {
                 return GT_FAIL; 
@@ -2330,6 +2331,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
         if (retVal != GT_OK)
         {
             DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("mvHwsIoBistTest failure \n"));
+	    mvPrintf("mvHwsIoBistTest failure \n");
             return retVal;
         }
 #endif
@@ -2561,6 +2563,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
 		}
 		if (retVal != GT_OK)
 		{
+			mvPrintf( "ddr3TipFreqSet failure \n");
 			DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR,( "ddr3TipFreqSet failure \n"));
 			if (debugMode == GT_FALSE)
 			{
@@ -2586,6 +2589,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
        }
        if (retVal != GT_OK)
         {
+            mvPrintf("ddr3TipDynamicWriteLeveling TF failure \n"); 
             DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipDynamicWriteLeveling TF failure \n")); 
             if (debugMode == GT_FALSE)
             {
@@ -2604,6 +2608,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
         }
         if (retVal != GT_OK)
         {
+            mvPrintf("ddr3TipLoadAllPatternToMem failure \n"); 
             DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipLoadAllPatternToMem failure \n")); 
             if (debugMode == GT_FALSE)
             {
@@ -2622,11 +2627,12 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
         }
         if (retVal != GT_OK)
         {
-            DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipDynamicReadLeveling TF failure \n")); 
-            if (debugMode == GT_FALSE)
-            {
-                return GT_FAIL; 
-            }
+		mvPrintf("ddr3TipDynamicReadLeveling TF failure \n");
+		DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipDynamicReadLeveling TF failure \n")); 
+		if (debugMode == GT_FALSE)
+		{
+			return GT_FAIL; 
+		}
         }
     }
 
@@ -2650,7 +2656,8 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
 		    }
 		    if (retVal != GT_OK)
 		    {
-		        DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipVref failure \n"));
+			    mvPrintf("ddr3TipVref failure \n");
+			    DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipVref failure \n"));
 		        if (debugMode == GT_FALSE)
 		        {
 		            return GT_FAIL;
@@ -2663,7 +2670,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
 	    if (maskTuneFunc & CENTRALIZATION_RX_MASK_BIT)
 		 {
 			trainingStage = CENTRALIZATION_RX;
-			DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("CENTRALIZATION_RX_MASK_BIT CS #%d\n",effective_cs));
+			DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("CENTRALIZATION_RX_MASK_BIT CS #%d mask=0x%x isRegDump=%d\n",effective_cs,maskTuneFunc, isRegDump ));
 			retVal = ddr3TipCentralizationRx(devNum);
 			if (isRegDump != 0)
 			{
@@ -2671,6 +2678,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
 			}
 			if (retVal != GT_OK)
 			{
+				mvPrintf("ddr3TipCentralizationRx failure CS #%d\n",effective_cs);
 				DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipCentralizationRx failure CS #%d\n",effective_cs));
 				if (debugMode == GT_FALSE)
 				{
@@ -2694,6 +2702,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
 			}
 			if (retVal != GT_OK)
 			{
+				mvPrintf("ddr3TipDynamicWriteLevelingSupp TF failure CS #%d\n",effective_cs);
 				DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipDynamicWriteLevelingSupp TF failure CS #%d\n",effective_cs));
 				if (debugMode == GT_FALSE)
 				{
@@ -2715,7 +2724,8 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
 		if (maskTuneFunc & CENTRALIZATION_TX_MASK_BIT)
 		{
 			trainingStage = CENTRALIZATION_TX;
-			DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("CENTRALIZATION_TX_MASK_BIT CS #%d\n",effective_cs));
+			DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("CENTRALIZATION_TX_MASK_BIT CS #%d mask=0x%x isRegDump=%d\n",effective_cs,maskTuneFunc, isRegDump ));
+			//mvPrintf("CENTRALIZATION_TX_MASK_BIT CS #%d mask=0x%x isRegDump=%d\n",effective_cs,maskTuneFunc, isRegDump);
 			retVal = ddr3TipCentralizationTx(devNum);
 			if (isRegDump != 0)
 			{
@@ -2723,6 +2733,7 @@ static GT_STATUS    ddr3TipDDR3Ddr3TrainingMainFlow
 			}
 			if (retVal != GT_OK)
 			{
+				mvPrintf("ddr3TipCentralizationTx failure CS #%d\n",effective_cs);
 				DEBUG_TRAINING_IP(DEBUG_LEVEL_ERROR, ("ddr3TipCentralizationTx failure CS #%d\n",effective_cs));
 				if (debugMode == GT_FALSE)
 				{
@@ -2768,7 +2779,7 @@ static GT_STATUS    ddr3TipDDR3AutoTune
     }
 
     retVal = ddr3TipDDR3Ddr3TrainingMainFlow(devNum);
-
+    
     /* activate XSB test */
     if (xsbValidateType != 0)
     {
@@ -2782,8 +2793,8 @@ static GT_STATUS    ddr3TipDDR3AutoTune
     /* print log */
     CHECK_STATUS(ddr3TipPrintLog(devNum, windowMemAddr));
 #ifndef MV_HWS_EXCLUDE_DEBUG_PRINTS
-	if(retVal != GT_OK)
-		CHECK_STATUS(ddr3TipPrintStabilityLog(devNum));
+    // AO	if(retVal != GT_OK)
+    //		CHECK_STATUS(ddr3TipPrintStabilityLog(devNum));
 #endif
     for(interfaceId = 0; interfaceId <= MAX_INTERFACE_NUM-1; interfaceId++)
     {
@@ -2798,6 +2809,7 @@ static GT_STATUS    ddr3TipDDR3AutoTune
         if (isIfFail == GT_TRUE)
         {
             isAutoTuneFail = GT_TRUE;
+            mvPrintf("###Auto Tune failed for IF %d\n", interfaceId);
             DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("Auto Tune failed for IF %d\n", interfaceId));
         }
     }
@@ -2807,6 +2819,7 @@ static GT_STATUS    ddr3TipDDR3AutoTune
 	{
 		/* in case MainFlow result and trainingResult DB are not synced we issue warning message
 		   this usually means that trainingResult DB was not updated in a case of a failure */
+		mvPrintf("Warning: Algorithm return value and Result DB are not synced (retVal 0x%x  result DB %d)\n", retVal, isAutoTuneFail);
 		DEBUG_TRAINING_IP(DEBUG_LEVEL_INFO, ("Warning: Algorithm return value and Result DB are not synced (retVal 0x%x  result DB %d)\n", retVal, isAutoTuneFail));
 	}
 

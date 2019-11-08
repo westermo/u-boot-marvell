@@ -96,7 +96,8 @@ Copyright (C) Marvell International Ltd. and its affiliates
 
 #include "bootstrap_os.h"
 
-
+//#include "mvDdr3TrainingIp.h"
+//extern GT_U32 ckDelay;
 
 #if defined(MV_MSYS_BC2)
 #define MARVELL_BOARD	BC2_MARVELL_BOARD_ID_BASE
@@ -165,12 +166,13 @@ MV_U32 ddr3GetDeviceWidth(MV_U32 uiCs);
 MV_U32 	mvBoardIdIndexGet(MV_U32 boardId);
 MV_U32 mvBoardIdGet(MV_VOID);
 MV_U32 ddr3GetBusWidth(void);
+//#define MV_RUN_WIN_VALIDATION_TEST // AO 
 #ifdef MV_RUN_WIN_VALIDATION_TEST
 extern MV_VOID mvHwsDdr3TipSweepTest(MV_BOOL enable);
 #endif
 extern MV_VOID ddr3SetLogLevel(MV_U32 nLogLevel);
 static MV_U32 gLogLevel = 0;
-static MV_STATUS ddr3HwsTuneTrainingParams(MV_U8 devNum);
+static MV_STATUS ddr3HwsTuneTrainingParams(MV_U8 devNum, int ck);
 
 MV_STATUS ddr3CalcMemCsSize(MV_U32 uiCs, MV_U32* puiCsSize);
 
@@ -329,6 +331,8 @@ static MV_STATUS ddr3SaveAndSetTrainingWindows(MV_U32 *auWinBackup)
 return MV_OK;
 }
 
+#define MIN_CK_DELAY 160
+#define MAX_CK_DELAY 500
 /************************************************************************************
  * Name:     ddr3Init - Main DDR3 Init function
  * Desc:     This routine initialize the DDR3 MC and runs HW training.
@@ -405,40 +409,70 @@ MV_U32 ddr3Init(void)
 	/************************************************************************************/
 	/* Set X-BAR windows for the training sequence */
 	ddr3SaveAndSetTrainingWindows(auWinBackup);
+        int ckDelay, ck_min=1000, ck_max=0, ckDelay_store=0;
+	int stop = 0;
+        int stable = 0;
+	for (ckDelay=MIN_CK_DELAY; ckDelay <= MAX_CK_DELAY+20; ckDelay += 20)
+	{
+		if (ckDelay >= MAX_CK_DELAY) {
+			ckDelay_store = (ck_min+ck_max)/2;
+//			ckDelay_store = 250;
+                        if (stable)
+                           stop = 1;
+                        else
+                           stable++;
+		} else
+			ckDelay_store = ckDelay;
 
 #ifdef SUPPORT_STATIC_DUNIT_CONFIG
-	/* load static controller configuration (in case dynamic/geenric init is not enabled */
-	if( genericInitController == 0){
-		ddr3TipInitSpecificRegConfig(0, ddr_modes[ddr3GetStaticDdrMode()].regs);
+		/* load static controller configuration (in case dynamic/geenric init is not enabled */
+		if( genericInitController == 0){
+			ddr3TipInitSpecificRegConfig(0, ddr_modes[ddr3GetStaticDdrMode()].regs);
 	}
 #endif
 
-	/*Load topology for New Training IP*/
-	status = ddr3LoadTopologyMap();
-	if (MV_OK != status) {
-		mvPrintf("%s Training Sequence topology load - FAILED\n", ddrType);
-		return status;
-	}
+		/*Load topology for New Training IP*/
+		status = ddr3LoadTopologyMap();
+		if (MV_OK != status) {
+			mvPrintf("Training Sequence topology load - FAILED\n");
+			continue;
+			//return status;
+		}
 
-	/*Tune training algo paramteres*/
-	status = ddr3HwsTuneTrainingParams(0);
-	if (MV_OK != status) {
-		return status;
-	}
+		/*Tune training algo paramteres*/
+		status = ddr3HwsTuneTrainingParams(0, ckDelay_store);
+		if (MV_OK != status) {
+			mvPrintf("Training Sequence TuneTrainingParams - FAILED\n");
+			//return status;
+			continue;
+		}
 
-	/*Set log level for training lib*/
-	ddr3HwsSetLogLevel(MV_DEBUG_BLOCK_ALL, DEBUG_LEVEL_ERROR);
-	/*ddr3HwsSetLogLevel(MV_DEBUG_TRAINING_MAIN, DEBUG_LEVEL_TRACE);*/
+		/*Set log level for training lib*/
+		ddr3HwsSetLogLevel(MV_DEBUG_BLOCK_ALL, DEBUG_LEVEL_ERROR);
+		/*ddr3HwsSetLogLevel(MV_DEBUG_TRAINING_MAIN, DEBUG_LEVEL_TRACE);*/
 
 #ifdef MV_RUN_WIN_VALIDATION_TEST /* to run DDR viewer tool (to display DDR training results) */
-	mvHwsDdr3TipSweepTest(MV_TRUE);
+		mvHwsDdr3TipSweepTest(MV_TRUE);
 #endif
 
-	/*Start New Training IP*/
-	status = ddr3HwsHwTraining();
-	if (MV_OK != status) {
-		mvPrintf("%s Training Sequence - FAILED\n", ddrType);
-		return status;
+		/*Start New Training IP*/
+		status = ddr3HwsHwTraining();
+		if (MV_OK == status) {
+			mvPrintf(" - OK. ck=%d\n", ckDelay_store);
+			if (ckDelay_store < ck_min)
+				ck_min = ckDelay_store;
+			if (ckDelay_store > ck_max)
+				ck_max = ckDelay_store;
+			//break;
+		}
+		else {
+			mvPrintf(" - FAIL. ck=%d\n", ckDelay_store);
+			//mvPrintf("%s Training Sequence - FAILED. ck=%d\n", ddrType, ckDelay);
+			//return status;
+		}
+
+		if (stop)
+			break;
 	}
 
 	/************************************************************************************/
@@ -837,7 +871,7 @@ static MV_STATUS ddr3UpdateTopologyMap(MV_HWS_TOPOLOGY_MAP* topologyMap)
  * Notes: Tune internal training params
  * Returns:
  */
-static MV_STATUS ddr3HwsTuneTrainingParams(MV_U8 devNum)
+static MV_STATUS ddr3HwsTuneTrainingParams(MV_U8 devNum, int ck)
 {
 	MV_TUNE_TRAINING_PARAMS params;
 	MV_U32 interfaceId;
@@ -853,7 +887,8 @@ static MV_STATUS ddr3HwsTuneTrainingParams(MV_U8 devNum)
 	CHECK_STATUS(mvCalcCsNum(devNum, interfaceId, &csNum));
 
 	/*NOTE: do not remove any field initilization*/
-	params.ckDelay = MV_TUNE_TRAINING_PARAMS_CK_DELAY;
+//	params.ckDelay = MV_TUNE_TRAINING_PARAMS_CK_DELAY;
+	params.ckDelay = ck;
 	params.PhyReg3Val = MV_TUNE_TRAINING_PARAMS_PHYREG3VAL;
 
 	params.gZpriData = MV_TUNE_TRAINING_PARAMS_PRI_DATA;

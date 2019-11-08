@@ -77,6 +77,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define osPrintf mvPrintf
 #endif
 
+/*
+#define DEBUG_TRAINING_BIST_ENGINE(level,s) {osPrintf s;}
+#define DEBUG_TRAINING_IP(level,s) {osPrintf s;}
+#define DEBUG_CENTRALIZATION_ENGINE(level,s) {osPrintf s;}
+#define DEBUG_TRAINING_HW_ALG(level,s) {osPrintf s;}
+#define DEBUG_TRAINING_IP_ENGINE(level,s) {osPrintf s;}
+#define DEBUG_LEVELING(level,s) {osPrintf s;}
+#define DEBUG_PBS_ENGINE(level,s) {osPrintf s;}
+#define DEBUG_TRAINING_STATIC_IP(level,s) {osPrintf s;}
+#define DEBUG_TRAINING_ACCESS(level,s) {osPrintf s;}
+*/
 
 #ifdef SILENT_LIB
 #define DEBUG_TRAINING_BIST_ENGINE(level,s)
@@ -92,13 +103,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef LIB_FUNCTIONAL_DEBUG_ONLY
 #define DEBUG_TRAINING_BIST_ENGINE(level,s)
 #define DEBUG_TRAINING_IP_ENGINE(level,s)
+#define DEBUG_TRAINING_IP(level,s) if (level >= debugTraining) {}
+#define DEBUG_CENTRALIZATION_ENGINE(level,s)	if (level >= debugCentralization) {}
+#define DEBUG_TRAINING_HW_ALG(level,s) if (level >= debugTrainingHwAlg) {}
+#define DEBUG_LEVELING(level,s) if (level >= debugLeveling) {}
+#define DEBUG_PBS_ENGINE(level,s) if (level >= debugPbs) {}
+#define DEBUG_TRAINING_STATIC_IP(level,s) if (level >= debugTrainingStatic) {}
+#define DEBUG_TRAINING_ACCESS(level,s) if (level >= debugTrainingAccess) {}
+ /*
+#define DEBUG_TRAINING_BIST_ENGINE(level,s)
+#define DEBUG_TRAINING_IP_ENGINE(level,s)
 #define DEBUG_TRAINING_IP(level,s) if (level >= debugTraining) {osPrintf s;}
 #define DEBUG_CENTRALIZATION_ENGINE(level,s)	if (level >= debugCentralization) {osPrintf s;}
 #define DEBUG_TRAINING_HW_ALG(level,s) if (level >= debugTrainingHwAlg) {osPrintf s;}
 #define DEBUG_LEVELING(level,s) if (level >= debugLeveling) {osPrintf s;}
 #define DEBUG_PBS_ENGINE(level,s) if (level >= debugPbs) {osPrintf s;}
 #define DEBUG_TRAINING_STATIC_IP(level,s) if (level >= debugTrainingStatic) {osPrintf s;}
-#define DEBUG_TRAINING_ACCESS(level,s) if (level >= debugTrainingAccess) {osPrintf s;}
+#define DEBUG_TRAINING_ACCESS(level,s) if (level >= debugTrainingAccess) {osPrintf s;}*/
 #else
 #define DEBUG_TRAINING_BIST_ENGINE(level,s) if (level >= debugTrainingBist) {osPrintf s;} 
 #define DEBUG_TRAINING_IP_ENGINE(level,s) if (level >= debugTrainingIp) {osPrintf s;} 
