@@ -240,7 +240,7 @@ MV_STATUS earlyHwInit(void)
 	/* Set GPIO 17 so that the reset FPGA knows PPU is disabled */
 	gpioOutSet(17, 1);
 
-	DEBUG_INIT_S("\n\nWestermo initialization " UTS_RELEASE " ck-310\n");
+	DEBUG_INIT_S("\n\nWestermo initialization " UTS_RELEASE " ck-240\n");
 
 	return MV_OK;
 }
