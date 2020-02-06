@@ -331,7 +331,7 @@ static MV_STATUS ddr3SaveAndSetTrainingWindows(MV_U32 *auWinBackup)
 return MV_OK;
 }
 
-#define MAX_CK_DELAY 500
+#define MAX_CK_DELAY 480
 /************************************************************************************
  * Name:     ddr3Init - Main DDR3 Init function
  * Desc:     This routine initialize the DDR3 MC and runs HW training.
@@ -409,18 +409,16 @@ MV_U32 ddr3Init(void)
 	/* Set X-BAR windows for the training sequence */
 	ddr3SaveAndSetTrainingWindows(auWinBackup);
 //	int ck_loop = 0;
-        int ckDelay, ck_min=1000, ck_max=0, ckDelay_store=0;
+    int ckDelay, ck_min=1000, ck_max=0, ckDelay_store=0;
 	int stop = 0;
-        int stable = 0;
+	int f_min = 0;
+	int f_max = 0;
 	for (ckDelay=200; ckDelay <= MAX_CK_DELAY+20; ckDelay += 20)
 	{
 		if (ckDelay >= MAX_CK_DELAY) {
 			//ckDelay_store = (ck_min+ck_max)/2;
-			ckDelay_store = 330; //(ck_min+ck_max)/2;
-                        if (stable)
-				stop = 1;
-			else
-				stable++;
+			ckDelay_store = ck_min+20; //(ck_min+ck_max)/2;
+			stop = 1;
 		} else
 			ckDelay_store = ckDelay;
 		//ckDelay = 200 + ck_loop * 50;
@@ -460,14 +458,39 @@ MV_U32 ddr3Init(void)
 		status = ddr3HwsHwTraining();
 		if (MV_OK == status) {
 			mvPrintf(" - OK. ck=%d\n", ckDelay_store);
+
+			/* Found min? */
+			if (f_min == 0) {
+				f_min = ckDelay_store;
+				mvPrintf("Found min = %d\n", f_min);
+			}
+
 			if (ckDelay_store < ck_min)
 				ck_min = ckDelay_store;
 			if (ckDelay_store > ck_max)
 				ck_max = ckDelay_store;
-			break;
+			//break;
 		}
 		else {
 			mvPrintf(" - FAIL. ck=%d\n", ckDelay_store);
+
+			/* Found max? */
+			if (f_min > 0) {
+				f_max = ckDelay_store - 20;
+				mvPrintf("Found max = %d\n", f_max);
+				/* No need to run more */
+				/* Tune training algo parameters to min + margin */
+				ddr3HwsTuneTrainingParams(0, f_min + 20);
+				status = ddr3HwsHwTraining();
+				if (MV_OK == status) {
+					mvPrintf("Training cycle done: Min %d Max %d\n", f_min, f_max);
+					mvPrintf("Setting final ck = %d\n", f_min + 20);
+				} else {
+					mvPrintf("Couldn't train to ck = %d\n", f_min + 20);
+				}
+
+				break;
+			}
 			//mvPrintf("%s Training Sequence - FAILED. ck=%d\n", ddrType, ckDelay);
 			//return status;
 		}
