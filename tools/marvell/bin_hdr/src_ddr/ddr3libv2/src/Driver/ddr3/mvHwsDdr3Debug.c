@@ -174,6 +174,8 @@ GT_STATUS ddr3TipRegDump
 	GT_U32 readData[MAX_INTERFACE_NUM];
 	GT_U8 octetsPerInterfaceNum = (GT_U8)ddr3TipDevAttrGet(devNum, MV_ATTR_OCTET_PER_INTERFACE);
     mvPrintf("-- dunit registers --\n");
+//    return GT_OK; //AO
+
     for(regAddr = 0x1400; regAddr < 0x19F0; regAddr+=4)
     {
         mvPrintf("0x%x ",regAddr);
@@ -396,7 +398,7 @@ void mvHwsDdr3TipSweepTest(GT_BOOL enable)
 	if (enable){
 		isValidateWindowPerIf = 1;
 		isValidateWindowPerPup = 1;
-		debugTraining = DEBUG_LEVEL_TRACE;
+		debugTraining = DEBUG_LEVEL_ERROR /* TRACE  AO*/;
 	}
 	else{
 		isValidateWindowPerIf = 0;
@@ -435,14 +437,14 @@ GT_STATUS ddr3TipPrintLog(GT_U32 devNum, GT_U32 memAddr)
     if (( isValidateWindowPerIf != 0) || ( isValidateWindowPerPup != 0))
 
     {
-    	GT_U32 isPupLog = 0;
-		MV_HWS_DDR_FREQ freq;
+        GT_U32 isPupLog = 0;
+//AO        MV_HWS_DDR_FREQ freq;
 
-		freq = topologyMap->interfaceParams[firstActiveIf].memoryFreq;
+//AO        freq = topologyMap->interfaceParams[firstActiveIf].memoryFreq;
 
         isPupLog = (isValidateWindowPerPup != 0) ? 1:0;
-		mvPrintf("===VALIDATE WINDOW LOG START===\n");
-		mvPrintf("DDR Frequency: %s   ======\n",ConvertFreq(freq));
+        //AO mvPrintf("===VALIDATE WINDOW LOG START===\n");
+        //AO mvPrintf("DDR Frequency: %s   ======\n",ConvertFreq(freq));
         /* print sweep windows */
         ddr3TipRunSweepTest(devNum, sweepCnt, 1 , isPupLog);
         ddr3TipRunSweepTest(devNum, sweepCnt, 0 , isPupLog);
@@ -453,11 +455,13 @@ GT_STATUS ddr3TipPrintLog(GT_U32 devNum, GT_U32 memAddr)
 			ddr3TipRunLevelingSweepTest(devNum, sweepCnt, 1 , isPupLog);
 		}
 #endif
+#if 0 // AO
 		ddr3TipPrintAllPbsResult(devNum);
 		ddr3TipPrintWLSuppResult(devNum);
 		mvPrintf("===VALIDATE WINDOW LOG END ===\n");
-		CHECK_STATUS(ddr3TipRestoreDunitRegs(devNum));
 		ddr3TipRegDump(devNum);
+#endif
+		CHECK_STATUS(ddr3TipRestoreDunitRegs(devNum));
     }
 #endif
 
@@ -1379,6 +1383,31 @@ GT_STATUS printPh(GT_U32 devNum, GT_U32 adll[MAX_INTERFACE_NUM*MAX_BUS_NUM])
     mvPrintf("\n");
     return GT_OK;
 }
+
+GT_STATUS getAdll(GT_U32 devNum, GT_U32 adll[MAX_INTERFACE_NUM*MAX_BUS_NUM], int *p)
+{
+    GT_U32 i,j;
+    GT_U32 octetsPerInterfaceNum;
+
+    devNum = devNum;
+    octetsPerInterfaceNum = ddr3TipDevAttrGet(devNum, MV_ATTR_OCTET_PER_INTERFACE);
+
+    for(j=0; j< octetsPerInterfaceNum; j++)
+    {
+        VALIDATE_BUS_ACTIVE(topologyMap->activeBusMask, j)
+        for(i=0;i<MAX_INTERFACE_NUM; i++)
+        {
+	    //mvPrintf("%d ,",adll[i*octetsPerInterfaceNum+j]);
+	    if (adll[i*octetsPerInterfaceNum+j] != ',') {
+		    *p = adll[i*octetsPerInterfaceNum+j];
+		    //mvPrintf("(%d)", *p);
+		    p++;
+	    }
+        }
+    }
+    //mvPrintf("\n");
+    return GT_OK;
+}
 #endif
 
 #ifndef EXCLUDE_SWITCH_DEBUG
@@ -1431,10 +1460,11 @@ GT_BOOL ddr3TipRunSweepTest(GT_32 devNum, GT_U32 RepeatNum, GT_U32 direction, GT
     MV_HWS_ACCESS_TYPE  pupAccess;
     GT_U32 uiCs;
     GT_U32 maxCs = mvHwsDdr3TipMaxCSGet(devNum);
-	GT_U8 octetsPerInterfaceNum = ddr3TipDevAttrGet(devNum, MV_ATTR_OCTET_PER_INTERFACE);
+    GT_U8 octetsPerInterfaceNum = ddr3TipDevAttrGet(devNum, MV_ATTR_OCTET_PER_INTERFACE);
+    int buf[10];
 
     RepeatNum = RepeatNum;
-	RepeatNum = 2;
+    RepeatNum = 2;
     if ( mode == 1)
     {
         /* per pup */
@@ -1448,6 +1478,8 @@ GT_BOOL ddr3TipRunSweepTest(GT_32 devNum, GT_U32 RepeatNum, GT_U32 direction, GT
         endPup = 0;
         pupAccess = ACCESS_TYPE_MULTICAST;
     }
+//AO    mvPrintf("ddr3TipRunSweepTest mode=0x%x adll_len=%d dir=%d rep=%d\n", mode, ADLL_LENGTH, direction, RepeatNum);
+    
     for(uiCs=0; uiCs < maxCs; uiCs++){
 	for(adll = 0 ; adll < ADLL_LENGTH ; adll++)
 	{
@@ -1480,6 +1512,7 @@ GT_BOOL ddr3TipRunSweepTest(GT_32 devNum, GT_U32 RepeatNum, GT_U32 direction, GT
 					adllValue = (direction == 0) ? (adll*2):adll;
 					CHECK_STATUS(mvHwsDdr3TipBUSWrite(  devNum, ACCESS_TYPE_MULTICAST, 0, pupAccess, pup, DDR_PHY_DATA, reg + CS_BYTE_GAP(uiCs), adllValue));
 					mvHwsDdr3RunBist(devNum, sweepPattern, res ,uiCs);
+//AO                                        mvPrintf("### RunBist %d SweepPattern=0x%x MaxNum=%d\n", uiCs, sweepPattern, MAX_INTERFACE_NUM);
 					/*ddr3TipResetFifoPtr(devNum);*/
 					for(interfaceId = 0; interfaceId <= MAX_INTERFACE_NUM-1; interfaceId++)
 					{
@@ -1494,6 +1527,7 @@ GT_BOOL ddr3TipRunSweepTest(GT_32 devNum, GT_U32 RepeatNum, GT_U32 direction, GT
 			}
 		}
 	}
+#if 0 //AO
 	mvPrintf("Final,CS %d,%s,Sweep,Result,Adll,", uiCs,((direction==0) ? "TX":"RX"));
 	for(interfaceId = 0; interfaceId <= MAX_INTERFACE_NUM-1; interfaceId++)
 	{
@@ -1526,12 +1560,24 @@ GT_BOOL ddr3TipRunSweepTest(GT_32 devNum, GT_U32 RepeatNum, GT_U32 direction, GT
 		}
 		mvPrintf("\n");
 	}
+#endif	
 	/*Write back to the phy the Rx DQS value, we store in the begging. */
 	mvHwsDdr3TipWriteAdllValue(devNum,ctrlADLL, (reg +  uiCs * CS_REGISTER_ADDR_OFFSET));
 	/* print adll results */
 	mvHwsDdr3TipReadAdllValue(devNum,ctrlADLL, (reg + uiCs * CS_REGISTER_ADDR_OFFSET), MASK_ALL_BITS);
+#if 0
 	mvPrintf("%s,DQS,ADLL,,,",(direction==0) ? "Tx":"Rx");
 	printAdll(devNum, ctrlADLL);
+	if (direction == 0) mvPrintf("%-ADLL=",(direction==0) ? "Tx":"Rx");
+#endif
+	if (direction == 0) {
+		if (uiCs == 0)
+			getAdll(devNum, ctrlADLL, &buf[0]);
+		else {
+			getAdll(devNum, ctrlADLL, &buf[2]);
+			mvPrintf("Tx-cs0=%d:%d cs1=%d:%d ", buf[0], buf[1], buf[2], buf[3]);
+		}
+	}
     }
     ddr3TipResetFifoPtr(devNum);
     return 0;

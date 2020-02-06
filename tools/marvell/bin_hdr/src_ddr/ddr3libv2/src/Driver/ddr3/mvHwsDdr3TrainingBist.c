@@ -242,6 +242,7 @@ GT_STATUS    mvHwsDdr3RunBist
             return retVal;
         }
         result[i] = stBistResult.bistErrorCnt;
+//        mvPrintf("ddr3TipBistReadResult result=0x%x pattern=0x%x\n", stBistResult.bistErrorCnt, pattern);
     }
 
 

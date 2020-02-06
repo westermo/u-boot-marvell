@@ -413,6 +413,9 @@ GT_STATUS    ddr3TipCmdAddrInitDelay
 		ckNumADLLTap = ckDelay/adllTap;
 		caNumADLLTap = caDelay/adllTap;
 
+//AO                mvPrintf("### CK  ckNumADLLTap=%d ckDelay=%d adllTap=%d\n", ckNumADLLTap, ckDelay, adllTap);
+//AO                mvPrintf("### CK  caNumADLLTap=%d caDelay=%d adllTap=%d\n", caNumADLLTap, caDelay, adllTap);
+
 		data = (ckNumADLLTap & 0x3f) + ((caNumADLLTap & 0x3f) << 10);
 		/* Set the ADLL number to the CK ADLL for Interfaces for all Pup */
 		DEBUG_TRAINING_HW_ALG(DEBUG_LEVEL_TRACE,("ckNumADLLTap %d caNumADLLTap %d adllTap %d\n",ckNumADLLTap,caNumADLLTap,adllTap));

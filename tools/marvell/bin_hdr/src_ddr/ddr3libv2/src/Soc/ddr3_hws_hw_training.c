@@ -135,32 +135,32 @@ MV_STATUS ddr3HwsHwTraining(void)
     initParam.msysInit = GT_TRUE;
     status = mvHwsDdr3TipInitController(0, &initParam);
 	if (MV_OK != status) {
-		mvPrintf("DDR3 init controller - FAILED 0x%x\n", status);
+           //AO mvPrintf("DDR3 init controller - FAILED 0x%x\n", status);
 		return status;
 	}
 
     status = ddr3SiliconPostInit();
 	if (MV_OK != status) {
-		mvPrintf("DDR3 Post Init - FAILED 0x%x\n", status);
+           //AO mvPrintf("DDR3 Post Init - FAILED 0x%x\n", status);
 		return status;
 	}
 
     status = ddr3PreAlgoConfig();
 	if (MV_OK != status) {
-		mvPrintf("DDR3 Pre Algo Config - FAILED 0x%x\n", status);
+           //AO mvPrintf("DDR3 Pre Algo Config - FAILED 0x%x\n", status);
 		return status;
 	}		
 
 	/* run algorithm in order to configure the PHY */
 	status = mvHwsDdr3TipRunAlg(0, algoMode);
 	if (MV_OK != status) {
-		mvPrintf("DDR3 run algorithm - FAILED 0x%x\n", status);
+           // AO mvPrintf("DDR3 run algorithm - FAILED 0x%x\n", status);
 		return status;
 	}
 
     status = ddr3PostAlgoConfig();  
 	if (MV_OK != status) {
-		mvPrintf("DDR3 Post Algo Config - FAILED 0x%x\n", status);
+           // AO mvPrintf("DDR3 Post Algo Config - FAILED 0x%x\n", status);
 		return status;
 	}		
 

@@ -68,8 +68,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ddr3_a38x_mc_static.h"
 #include "mvDdrTopologyDef.h"
 
-/* to run DDR viewer tool (including BIST) uncomment the define
-#define MV_RUN_WIN_VALIDATION_TEST */
+/* to run DDR viewer tool (including BIST) uncomment the define AO */
+#define MV_RUN_WIN_VALIDATION_TEST /**/
 
 typedef struct __mvDramModes {
     char *mode_name;
