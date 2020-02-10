@@ -458,7 +458,7 @@ MV_U32 ddr3Init(void)
 		status = ddr3HwsHwTraining();
 		if (MV_OK == status) {
 			mvPrintf(" - OK. ck=%d\n", ckDelay_store);
-
+			//return MV_OK;
 			/* Found min? */
 			if (f_min == 0) {
 				f_min = ckDelay_store;
