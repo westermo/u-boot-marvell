@@ -480,6 +480,7 @@ MV_U32 ddr3Init(void)
 				mvPrintf("Found max = %d\n", f_max);
 				/* No need to run more */
 				/* Tune training algo parameters to min + margin */
+				ddr3LoadTopologyMap();
 				ddr3HwsTuneTrainingParams(0, f_min + 20);
 				status = ddr3HwsHwTraining();
 				if (MV_OK == status) {
